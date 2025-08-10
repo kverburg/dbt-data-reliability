@@ -166,7 +166,16 @@
                 when change= 'column_removed'
                     then 'The column "' || column_name || '" was removed'
                 when change= 'type_changed'
-                    then 'The type of "' || column_name || '" was changed from ' || pre_data_type || ' to ' || data_type
+                    then case
+                        when length(pre_data_type) > 30 or length(data_type) > 30
+                            then case
+                                when pre_data_type like 'struct<%' and data_type like 'struct<%'
+                                    then 'The type of "' || column_name || '" was changed: ' || 
+                                         {{ elementary.get_struct_field_changes(pre_data_type, data_type) }}
+                                else 'The type of "' || column_name || '" was changed (complex type change)'
+                            end
+                        else 'The type of "' || column_name || '" was changed from ' || pre_data_type || ' to ' || data_type
+                    end
                 else NULL
             end as test_results_description
         from all_column_changes
